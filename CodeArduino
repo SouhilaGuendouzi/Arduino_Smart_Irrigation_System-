@@ -1,0 +1,301 @@
+#include <SoftwareSerial.h>
+#include <dht11.h>
+dht11 DHT;
+String data=" ";
+String apiKey="6Q6QTWZH6VMBUB37"; //for temperature and humidity 
+String apikey="NI3SSV40FXA8BERS"; // for Pump
+int i=0;
+  String join;
+   String cmd;
+   String getStr;
+int ledPin = 13; 
+#define SSID "//" 
+#define PASS "**" 
+#define Water 8
+SoftwareSerial SoftSer(10, 11);  //rx..11,tx..10 //"Ingenierie"//
+void setup() {
+  pinMode(Water, INPUT);
+  pinMode(ledPin, OUTPUT);
+  Serial.begin(9600);
+  SoftSer.begin(115200); 
+  join="AT+CWJAP=\""; 
+  join+=SSID;
+  join+="\",\"";
+  join+=PASS;
+  join+="\"";
+  SoftSer.println(join);
+  delay(5000);
+  cmd = "AT+CIPSTART=\"TCP\",\"";
+  cmd += "184.106.153.149"; // api.thingspeak.com
+  cmd += "\",80";
+  SoftSer.println(cmd);
+
+  if (SoftSer.find("Error")) 
+  {
+    Serial.println("AT+CIPSTART error");
+    return;
+  }
+  getStr = "GET /channels/757342/fields/1/last.txt";
+  getStr += "\r\n\r\n";
+  cmd = "AT+CIPSEND=";
+  cmd += String(getStr.length());
+  SoftSer.println(cmd);
+
+  if (SoftSer.find(">")) 
+{
+    SoftSer.print(getStr);
+    
+   // Serial.println( SoftSer.read());
+  while(1)
+{
+  int a=SoftSer.read();
+  if(a == 'C')
+ break; 
+ else
+   if((a>=32) && (a<=127))
+ { i++;
+   
+  // Serial.print(char(a));  // Serial.println(".");    //Serial.println( i);
+  data+=char(a);
+    }
+    }
+  data="";
+    i=0;
+   
+}
+  else 
+  {
+    SoftSer.println("AT+CIPCLOSE");
+    
+    Serial.println("AT+CIPCLOSE"); 
+  }
+    
+  
+    SoftSer.println("AT+RST");
+}
+  void loop(){
+        DHT.read(4);
+        float T=DHT.temperature;
+        float H=DHT.humidity;
+ join="AT+CWJAP=\""; 
+  join+=SSID;
+  join+="\",\"";
+  join+=PASS;
+  join+="\"";
+  SoftSer.println(join);
+  delay(5000);
+ Serial.println("la temperature");
+ Serial.print(T);
+  Serial.println("c");
+  Serial.println("lhum");
+ Serial.print(H);
+  Serial.println("%");
+  
+  // TCP connection
+  cmd= "AT+CIPSTART=\"TCP\",\"";
+  cmd += "184.106.153.149"; // api.thingspeak.com
+  cmd += "\",80";
+  SoftSer.println(cmd);
+
+  if (SoftSer.find("Error")) 
+  {
+    Serial.println("AT+CIPSTART error");
+    return;
+  }
+ getStr = "GET /update?api_key=";
+  getStr += apiKey;
+  getStr += "&field1=";
+  getStr += String(DHT.temperature);
+  getStr += "&field2=";
+  getStr += String(DHT.humidity);
+  getStr += "\r\n\r\n";
+
+  // send data length
+  cmd = "AT+CIPSEND=";
+  cmd += String(getStr.length());
+  SoftSer.println(cmd);
+
+  if (SoftSer.find(">")) 
+  {
+    SoftSer.print(getStr); // Send data.
+  }
+  else 
+  {
+    SoftSer.println("AT+CIPCLOSE");
+    
+    Serial.println("AT+CIPCLOSE"); 
+  }
+  
+    SoftSer.println("AT+RST");
+
+  join="AT+CWJAP=\""; 
+  join+=SSID;
+  join+="\",\"";
+  join+=PASS;
+  join+="\"";
+  SoftSer.println(join);
+  delay(5000);
+  String cmd = "AT+CIPSTART=\"TCP\",\"";
+  cmd += "184.106.153.149"; // api.thingspeak.com
+  cmd += "\",80";
+  SoftSer.println(cmd);
+
+  if (SoftSer.find("Error")) 
+  {
+    Serial.println("AT+CIPSTART error");
+    return;
+  }
+  getStr = "GET /channels/757342/fields/1/last.txt";
+  getStr += "\r\n\r\n";
+  cmd = "AT+CIPSEND=";
+  cmd += String(getStr.length());
+  SoftSer.println(cmd);
+
+  if (SoftSer.find(">")) 
+{
+    SoftSer.print(getStr);
+    
+   // Serial.println( SoftSer.read());
+   Serial.println( "la commande est envoyée");
+  while(1)
+{
+  int a=SoftSer.read();
+  if(a == 'C')
+ break; 
+ else
+   if((a>=32) && (a<=127))
+ { i++; //le nombre de caractere a verifier 
+    data+=char(a); // Serial.println(".");  //Serial.println( i); //Serial.println(data);
+    }
+    }
+    Serial.println(data[28]); //la case qui contient 0 ou 1
+    if (data[28]=='1')
+    {
+{if (((T==10)&&(H=80))||(digitalRead(Water)==HIGH))//Soil==**;
+{digitalWrite(ledPin,LOW);
+SoftSer.println("AT+RST");
+join="AT+CWJAP=\""; 
+  join+=SSID;
+  join+="\",\"";
+  join+=PASS;
+  join+="\"";
+  SoftSer.println(join);
+  delay(5000);
+ // TCP connection
+  cmd= "AT+CIPSTART=\"TCP\",\"";
+  cmd += "184.106.153.149"; // api.thingspeak.com
+  cmd += "\",80";
+  SoftSer.println(cmd);
+
+  if (SoftSer.find("Error")) 
+  {
+    Serial.println("AT+CIPSTART error");
+    return;
+  }
+ getStr = "GET /update?api_key=";
+  getStr += apikey;
+  getStr += "&field1=";
+  getStr += String(0);
+  getStr += "\r\n\r\n";
+
+  // send data length
+  cmd = "AT+CIPSEND=";
+  cmd += String(getStr.length());
+  SoftSer.println(cmd);
+
+  if (SoftSer.find(">")) 
+  {
+    SoftSer.print(getStr); // Send data.
+  }
+  else 
+  {
+    SoftSer.println("AT+CIPCLOSE");
+    
+    Serial.println("AT+CIPCLOSE"); 
+  }
+  
+    SoftSer.println("AT+RST");
+
+
+}
+else {
+Serial.println("la pompe est allumée");
+ digitalWrite(ledPin,HIGH);
+}
+ 
+}
+}
+        else if (data[28]=='0')  
+       {
+{if (((T==30)&&(H=20))&&(digitalRead(Water)==LOW))//Soil==**;
+{digitalWrite(ledPin,HIGH);
+SoftSer.println("AT+RST");
+join="AT+CWJAP=\""; 
+  join+=SSID;
+  join+="\",\"";
+  join+=PASS;
+  join+="\"";
+  SoftSer.println(join);
+  delay(5000);
+ // TCP connection
+  cmd= "AT+CIPSTART=\"TCP\",\"";
+  cmd += "184.106.153.149"; // api.thingspeak.com
+  cmd += "\",80";
+  SoftSer.println(cmd);
+
+  if (SoftSer.find("Error")) 
+  {
+    Serial.println("AT+CIPSTART error");
+    return;
+  }
+ getStr = "GET /update?api_key=";
+  getStr += apikey;
+  getStr += "&field1=";
+  getStr += String(1);
+  getStr += "\r\n\r\n";
+
+  // send data length
+  cmd = "AT+CIPSEND=";
+  cmd += String(getStr.length());
+  SoftSer.println(cmd);
+
+  if (SoftSer.find(">")) 
+  {
+    SoftSer.print(getStr); // Send data.
+  }
+  else 
+  {
+    SoftSer.println("AT+CIPCLOSE");
+    
+    Serial.println("AT+CIPCLOSE"); 
+  }
+  
+    SoftSer.println("AT+RST");
+
+
+}
+else {
+Serial.println("la pompe est arreter");
+ digitalWrite(ledPin,LOW);
+}
+ 
+}
+        }
+         else  Serial.println("problème de connexion , veuillez verifier votre connexion internet ");
+    data="";
+    i=0;
+   
+}
+  else 
+  {
+    SoftSer.println("AT+CIPCLOSE");
+    
+    Serial.println("AT+CIPCLOSE"); 
+  }
+    
+     
+    SoftSer.println("AT+RST");
+    delay(10000);
+
+ 
+  }
